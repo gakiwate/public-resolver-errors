@@ -45,19 +45,19 @@ informative:
 
 Internet DNS resolvers are increasingly subject to legal orders that require blocking or filtering of specific names. Because such filtering happens during DNS resolution, there is not an effective way to communicate what is happening to end users, often resulting in misattribution of the issue as a technical problem, rather than a policy intervention.
 
-Some organizations, such as Lumen {{lumen}}, monitor legally-mandated filtering as a public service, tracking specific filtering incidents in publicly accessible databases. Public resolvers themselves may also choose to track filtering requests over time and make them available.
+Some organizations such as Lumen {{lumen}} monitor legally-mandated filtering as a public service, tracking specific filtering incidents in publicly accessible databases. Other parties may also choose to track filtering requests over time and make them available.
 
 This draft defines a mechanism for DNS resolvers to convey identifiers for entries in such databases, based upon the structured error data for DNS responses introduced by {{!I-D.ietf-dnsop-structured-dns-error}}.
 
-A consuming party (e.g., a Web browser) can use this information to construct a link to the specific entry in the provider's database of filtering incidents. This enables user agents to direct users to additional context about the filtering incident they encountered.
+A consuming party (e.g., a Web browser) can use this information to construct a link to the specific entry in one or more databases of filtering incidents. This enables user agents to direct users to additional context about the filtering incident they encountered.
 
 The information conveyed is a DNS Filtering Database Entry, specified in {{entry-id}}. This abstraction is necessary because allowing DNS resolvers to inject links or user-visible messages would bring unique challenges. DNS resolvers are often automatically configured by unknown networks and DNS responses are unauthenticated, so these messages can come from untrusted parties -- including attackers (e.g., the so-called "coffee shop" attack) that leverage many users' lack of a nuanced model of the trust relationships between all of the parties that are involved in the service they are using.
 
-This draft attempts to mitigate these risks by minimising the information carried in the DNS response to abstract, publicly registered identifiers associated with databases of filtering incidents -- the DNS Filtering Database Entry -- rather than arbitrary URLs. A consuming party can choose which database identifiers they support are are willing to direct their users to, without enabling every DNS server to surface arbitrary links and text, and without requiring every consuming party to independently track which URLs are in use.
+This specification attempts to mitigate these risks by minimising the information carried in the DNS response to abstract, publicly registered identifiers associated with databases of filtering incidents -- the DNS Filtering Database Entry -- rather than arbitrary URLs. An application can choose which database identifiers they support and are willing to direct their users to, without enabling every DNS server to surface arbitrary links and text, and without requiring the consuming party to independently track which URLs are in use.
 
 ## Example
 
-In typical use, a DNS query that is filtered might contain an Extended DNS Error Code 17 (see {{!RFC8914}}) and an EXTRA-TEXT field "fdb", which is an array of references to filtering database entries:
+In typical use, a DNS query that is filtered might contain an Extended DNS Error Code 17 (see {{!RFC8914}}) and an EXTRA-TEXT field "fdbs", which is an array of references to filtering database entries:
 
 ~~~ json
 {
@@ -70,28 +70,29 @@ In typical use, a DNS query that is filtered might contain an Extended DNS Error
 }
 ~~~
 
-This indicates that the filtering incident can be accessed in two different databases, and the ID associated with each database. In this example, the data is available in the "example" database at identifier "abc123", and in the "lumen" database at identifier "def456".
+This indicates that the filtering incident can be accessed in two different databases, along with the ID associated with each database. In this example, the data is available in the "example" database at identifier "abc123", and in the "lumen" database at identifier "def456".
 
-An application that evaluates the DNS server and decides to present links to "example" to its users would look up "example" in a local copy of the DNS Filtering Incident Database Registry (see {{registry}}) and obtain the corresponding template (see {{template}}). For purposes of this example, assume that the registry entry for that value contains:
-
-~~~
-https://resolver.example.com/filtering-incidents/{id}
-~~~
-
-That template can be expanded using the value of "id" to:
+An application that decides to present the "example" entry to its users would look up "example" in a local copy of the DNS Filtering Incident Database Registry (see {{registry}}) and obtain the corresponding URI template (see {{template}}). For purposes of this example, assume that the registry entry for that value contains:
 
 ~~~
-https://resolver.example.com/filtering-incidents/abc123
+https://example.com/filtering-incidents/{id}
+~~~
+
+That URI template can be expanded using the value of "id" to:
+
+~~~
+https://example.com/filtering-incidents/abc123
 ~~~
 
 
-The application could (but might not) then decide to convey some or all of this information to its user; for example, with a statement that conveys:
+The application could (but might not) then decide to convey some or all of this information to its user; for example:
 
-> The webpage at www.example.net was blocked due to a legal request. Your DNS resolver may have more information about the legal request here:
+> The webpage at www.example.net was blocked by your DNS resolver due to a
+> legal request. More information is available here:
 >
-> https://resolver.example.com/filtering-incidents/abc123
+> https://example.com/filtering-incidents/abc123
 
-Note that there is no requirement for the resolver to construct links to any database, nor for results from any DNS server. The resolver both chooses which database providers it supports, and can evaluate whatever mechanisms it chooses to determine if and when to provide a link to the database entry.
+Note that there is no requirement for the resolver to convey any particular information here. The resolver both chooses which database providers it supports, and can evaluate whatever mechanisms it chooses to determine if and when to provide a link to the database entry.
 
 
 ## Notational Conventions
@@ -100,7 +101,7 @@ Note that there is no requirement for the resolver to construct links to any dat
 
 # Data Types
 
-This section defines the data types used to look up the details of a filtering incident from a DNS error response. Note that these identifiers are not for presentation to end users.
+This section defines the data types used to look up the details of a filtering incident from a DNS error response. Note that these identifiers are not suitable for presentation to end users.
 
 ## DNS Filtering Database Entry {#entry-id}
 
@@ -129,11 +130,11 @@ It is carried in the EXTRA-TEXT field of the Extended DNS Error with the JSON fi
 }
 ~~~
 
-Different clients will implement support for a varying set of database operators. Resolvers provide a list of entries (rather than a single entry) so that they can support as many clients with diverse database sets as possible.
+Different applications will implement support for a varying set of database operators. Resolvers provide a list of entries (rather than a single entry) so that they can support as many databases as possible.
 
 # Database Entry Resolution Templates {#template}
 
-An Incident Resolution Template is a URI Template {{!RFC6570}} contained in the DNS Filtering Database Registry ({{registry}}) that, upon expansion, provides a URI that can be dereferenced to obtain details about the filtering incident.
+An Database Entry Resolution Template is a URI Template {{!RFC6570}} contained in the DNS Filtering Database Registry ({{registry}}) that, upon expansion, provides a URI that can be dereferenced to obtain details about the filtering incident.
 
 It MUST be a Level 1 or Level 2 template (see {{Section 1.2 of RFC6570}}). It has the following variables from the Filtering Database Entry (see {{entry-id}}) available to it:
 
@@ -187,10 +188,10 @@ Contact:
 Filtering Database Operator ID:
 : see {{entry-id}}
 
-Incident Resolution Template:
+Database Entry Resolution Template:
 : see {{template}}
 
-The Incident Resolution Template can be updated by the contact at any time. However, operators SHOULD accommodate potentially long lag times for applications to update their copies of the registry.
+The Database Entry Resolution Template can be updated by the contact at any time. However, operators SHOULD accommodate potentially long lag times for applications to update their copies of the registry.
 
 # Security Considerations
 
@@ -198,7 +199,7 @@ This specification does not provide a way to authenticate that a particular filt
 
 The details of DNS responses are not available to all applications, depending on how they are architected and the information made available to them by their host. As a result, this mechanism is not reliable; some applications will not be able to display this error information.
 
-Because the registry is first-come, first-served, Applications (such as Web browsers) will need to exercise judgement regarding which database operators' error messages they display to users. This decision might be influenced by the identity of the resolver producing the error message, the database operator, or local configuration.
+Because the registry is first-come first-served, applications (such as Web browsers) will need to exercise judgement regarding which database operators' error messages they display to users. This decision might be influenced by the identity of the resolver producing the error message, the database operator, or local configuration.
 
 --- back
 
