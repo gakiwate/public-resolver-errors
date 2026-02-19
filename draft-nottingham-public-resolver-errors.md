@@ -212,8 +212,9 @@ may mitigate the risk from a filtering database operator, on-path network
 observers may still infer that the user encountered a filtering incident for a
 sensitive domain based on a connection to the filtering database.
 
-To mitigate this risk, applications SHOULD route incident URL fetches through a
-privacy-preserving proxy, such as an Oblivious HTTP relay {{?RFC9458}}. In
+To mitigate this risk, applications can choose to route
+incident URL fetches through a privacy-preserving
+mechanism like a proxy. In
 absence of such a proxy, applications MUST NOT automatically fetch incident URLs
 without explicit user action.
 
